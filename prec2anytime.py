@@ -37,7 +37,7 @@ def read_data(filename):
             zd, time, value = [i for i in lines.split()] #将整行数据分割处理，如果分割符是空格，括号里就不用传入参数，如果是逗号， 则传入‘，'字符。
             # zd 代表站点编号； time 代表时间； value 代表降雨量  #注意：刚读进来的数据是以字符串的形式存储
 #            print(type(value))
-            data.append(float(value))
+            data.append(float(value)/10)    #将单位换算为1mm 的标准单位
 #            data = np.array(data)
     return data 
 
@@ -48,8 +48,8 @@ def conv2t(data,t0, t):
     t0： 输入数据的时间间隔
     t ： 输出数据的时间间隔
     '''
-    dt = int(t/t0)   # dt 结果为float类型  !!!!
-    length = int(len(data)/dt)
+    dt = int(t/t0)   # dt 结果为float类型  !!!!  要转换为int类型
+    length = int(len(data)/dt) # 控制循环的次数 
 
     data_trans = []
     j = 0
@@ -63,39 +63,40 @@ def print_time(filename,length, dt):
     '''
     格式化输出时间格式
     输入为： 文件名，时间序列长度，时间间隔
+	输入的文件中文件格式为 年 月 日 时 分 
     输出为：格式化的时间序列
     '''
     year = [0] *length
     month = [0] *length
     day = [0] *length
     hour = [0] *length
-    second = [0] *length
+    minute = [0] *length
     with open(filename, 'r') as f:
-        year[0],month[0],day[0],hour[0],second[0] = f.readline().strip().split()
+        year[0],month[0],day[0],hour[0],minute[0] = f.readline().strip().split()
         year[0] = int(year[0])
         month[0] = int(month[0])
         day[0] = int(day[0])
         hour[0] = int(hour[0])
-        second[0] = int(second[0])
+        minute[0] = int(minute[0])  #读入起始日期
 # =============================================================================
 # 循环准备输出时间格式   
 # =============================================================================
     for i in range(1, length):
         leap_year = 0 
         # 一般情况下分钟数加dt， 其他不变
-        if dt <= 60:   # 时间间隔小于1小时 
-            second[i] = second[i-1] + dt
+        if dt <= 60:   # 时间间隔小于1小时  要按分钟加
+            minute[i] = minute[i-1] + dt
             hour[i] = hour[i-1]
             day[i] = day[i-1]
             month[i] = month[i-1]
             year[i] = year[i-1]
-        elif dt<= 1440:
+        elif dt<= 1440: # 时间间隔大于1小时 小于24小时即小于1天时，按照时进行叠加
             dt_trans1 = int(dt/60)
             hour[i] = hour[i-1] + dt_trans1
             day[i] = day[i-1]
             month[i] = month[i-1]
             year[i] = year[i-1]
-        else:
+        else:  # 时间间隔大于1天，按天进行叠加
             dt_trans2 = int(dt/60/24)
             day[i] = day[i-1] + dt_trans2
             month[i] = month[i-1]
@@ -105,15 +106,15 @@ def print_time(filename,length, dt):
         if((year[i]%4==0) and (year[i]%100!=0) or (year[i]%400==0)):
             leap_year = 1
         # 超过60分钟为下一个小时
-        if second[i]>=60:
-            second[i] = 0
+        if minute[i]>=60:
+            minute[i] = 0
             hour[i] += 1
         # 超过24小时记为第二天 
         if(hour[i] >= 24):
             hour[i] -= 24
             day[i] += 1
         # 判断月,超过月最大天数的记为下一个月，大于1年的记为下一年    
-        if month[i] in (1,3,5,7,8,10,12):
+        if month[i] in (1,3,5,7,8,10):
             if day[i]>=32:
                 day[i] -= 31 
                 month[i] += 1
@@ -128,18 +129,23 @@ def print_time(filename,length, dt):
             elif(leap_year==0 and day[i]>=29):
                 day[i] = day[i] -28
                 month[i] += 1
+        elif month[i] ==12:   # 月份为12时应该特殊对待，年份应该加1
+            day[i] -= 32
+            month[i] =1
+            year[i] +=1
+            
         elif month[i] >= 13 :
             day[i] = 1
             month[i] = 1
             year [i] += 1
  
-    return year,month,day,hour,second
+    return year,month,day,hour,minute
     
 
 
 #filename = r'C:\Users\xiaofeixiazyh\Desktop\test.txt'
-#year,month,day,hour,second = print_time(filename,None)
-#print(year,month,hour,day,hour,second)
+#year,month,day,hour,minute = print_time(filename,None)
+#print(year,month,hour,day,hour,minute)
     
     
 
@@ -154,7 +160,7 @@ def write_data(data,filename):
 # =============================================================================
 # 输出数据部分
 # =============================================================================
-delta_t = 4320
+delta_t = 60 * 24*3
 filename = r'C:\Users\xiaofeixiazyh\Desktop\2013-2017.txt'
 prec = read_data(filename)
 data_trans = conv2t(prec, 5, delta_t)  
@@ -165,19 +171,19 @@ write_data(data_trans, filename2)
 # =============================================================================
 #  输出时间格式
 # =============================================================================
-filename3 = r'C:\Users\xiaofeixiazyh\Desktop\test.txt'
-length = len(data_trans)
-#year,month,day,hour,second = print_time(filename,length,10)
-#print(year[0],month[0],day[0],hour[0],second[0])
-year,month,day,hour,second = print_time(filename3,length,delta_t)
-s = []
-with open(r'C:\Users\xiaofeixiazyh\Desktop\time.txt','w') as w:
-    for i in range(length):
-        s = '\t'.join((str(year[i]),str(month[i]),str(day[i]),str(hour[i]),str(second[i])))
-        w.write(s)
-        w.write('\n')
+#filename3 = r'C:\Users\xiaofeixiazyh\Desktop\test.txt'
+#length = len(data_trans)
+#year,month,day,hour,minute = print_time(filename,length,10)
+#print(year[0],month[0],day[0],hour[0],minute[0])
+#year,month,day,hour,minute = print_time(filename3,length,delta_t)
+#s = []
+#with open(r'C:\Users\xiaofeixiazyh\Desktop\time.txt','w') as w:
+#    for i in range(length):
+#        s = '\t'.join((str(year[i]),str(month[i]),str(day[i]),str(hour[i]),str(minute[i])))
+#        w.write(s)
+#        w.write('\n')
 
 
 
-#  大于一小时的时候时间序列的间隔出现问题，需要改进
+
     
