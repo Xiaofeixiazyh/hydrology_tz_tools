@@ -4,6 +4,9 @@ Created on Fri May 25 10:29:29 2018
 
 @author: xiaofeixiazyh
 """
+'''
+this code for select station and station_id
+'''
 
 import pandas as pd
 #import numpy as np
