@@ -6,7 +6,7 @@ Created on 2020-6-22
 
 # required packages
 import numpy as np
-import pandas as import pd 
+import pandas as pd 
 from datetime import datetime, timedelta
 
 
