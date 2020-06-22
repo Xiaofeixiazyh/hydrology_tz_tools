@@ -146,19 +146,10 @@ if __name__ == '__main__':
     dry_num = int(dry_time*60/5)
 
     data_dir = '54514.txt'  # input your data_dir
-    out_dir = r'C:\Users\zyh\Desktop\test'      # inpurt your out_dir, need to create first
+    out_dir = r'C:\Users\zyh\Desktop\test'      # input your out_dir, need to create first
 
     data = read_raw_data(data_dir)
     clip_rain(data, dry_num, threshold, out_dir)
-
-
-
-
-
-
-
-
-
 
 
 
